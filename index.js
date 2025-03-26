@@ -172,6 +172,30 @@ app.post('/asistencia', (req, res) => {
   });
 });
 
+// Ruta para guardar múltiples asistencias
+app.post('/asistencia/multiple', (req, res) => {
+  const asistencias = req.body;
+  
+  if (!Array.isArray(asistencias) || asistencias.length === 0) {
+      return res.status(400).json({ mensaje: 'Datos de asistencia no válidos' });
+  }
+  
+  const query = 'INSERT INTO asistencia (usuario_id, grado_id, alumnos_id, estado) VALUES ?';
+  const values = asistencias.map(a => [a.usuario_id, a.grado_id, a.alumnos_id, a.estado]);
+  
+  db.query(query, [values], (err, results) => {
+      if (err) {
+          console.error('Error al guardar múltiples asistencias:', err);
+          return res.status(500).json({ mensaje: 'Error al guardar asistencias' });
+      }
+      
+      res.status(201).json({ 
+          mensaje: 'Asistencias guardadas exitosamente',
+          registrosAfectados: results.affectedRows
+      });
+  });
+});
+
 // 📌 Iniciar el servidor
 app.listen(port, () => {
   console.log(`🚀 Servidor escuchando en http://localhost:${port}`);
