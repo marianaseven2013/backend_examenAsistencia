@@ -9,10 +9,29 @@ const app = express();
 const port = 3005;
 
 // 📌 Middleware
+const allowedOrigins = [
+  'http://127.0.0.1:5500', 
+  'http://127.0.0.1:5501',
+  'http://localhost:5500',
+  'http://localhost:5501'
+];
+
 app.use(cors({
-  origin: 'http://127.0.0.1:5500',
-  credentials: true
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      const msg = `Origen ${origin} no permitido por CORS`;
+      console.error(msg);
+      return callback(new Error(msg), false);
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
@@ -38,6 +57,9 @@ db.connect((err) => {
 app.get('/', (req, res) => {
   res.send('¡Bienvenido al backend!');
 });
+
+// Manejar preflight para todas las rutas
+app.options('*', cors());
 
 app.post("/login", (req, res) => {
   console.log("Datos recibidos:", req.body);
@@ -67,7 +89,6 @@ app.post("/login", (req, res) => {
     });
 
     try {
-      // Comparación con bcrypt
       const match = await bcrypt.compare(contraseñaInput, usuario.contraseña);
       
       if (match) {
